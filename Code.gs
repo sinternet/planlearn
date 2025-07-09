@@ -26,9 +26,11 @@ const logSheet = ss.getSheetByName('Activity_Log');
  * @returns {HtmlOutput} The HTML page to display.
  */
 function doGet(e) {
-  const page = e.parameter.page || 'Index'; // Default to Login page
+  // ใช้ e.parameter.page เพื่อดูว่าผู้ใช้ขอหน้าอะไรมา, ถ้าไม่ระบุให้ไปหน้า Index
+  const page = e.parameter.page || 'Index'; 
   let htmlOutput;
 
+  // ตรวจสอบว่ามี case ครบทุกหน้าหรือไม่
   switch (page) {
     case 'Index':
       htmlOutput = HtmlService.createTemplateFromFile('Index').evaluate();
@@ -49,13 +51,20 @@ function doGet(e) {
       htmlOutput = HtmlService.createTemplateFromFile('Admin').evaluate();
       break;
     case 'AdminLog':
-        htmlOutput = HtmlService.createTemplateFromFile('AdminLog').evaluate();
-        break;
+      htmlOutput = HtmlService.createTemplateFromFile('AdminLog').evaluate();
+      break;
     default:
+      // ถ้าขอหน้าที่ไม่มีในระบบ ให้ส่งกลับไปหน้าแรกเสมอ
       htmlOutput = HtmlService.createTemplateFromFile('Index').evaluate();
   }
   
+  // ตั้งค่าหัวข้อเว็บและอนุญาตให้ฝังใน Google Sites
   return htmlOutput.setTitle('ระบบส่งแผนการสอนออนไลน์').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+// ฟังก์ชัน include ต้องมีอยู่ด้วย หากคุณใช้ <?!= include(...) ?>
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 /**
