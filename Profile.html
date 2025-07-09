@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แก้ไขโปรไฟล์ - ระบบส่งแผนการสอนออนไลน์</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root {
+            --header-gradient: linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%);
+            --primary-color: #3a47d5;
+            --secondary-color: #f4f7fc;
+            --text-color: #333;
+            --light-text-color: #777;
+            --white-color: #ffffff;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+        body {
+            font-family: 'Prompt', sans-serif; background-color: var(--secondary-color);
+            color: var(--text-color); margin: 0; padding-top: 80px;
+        }
+        .main-header {
+            position: fixed; top: 0; left: 0; width: 100%; background: var(--white-color);
+            box-shadow: var(--box-shadow); padding: 0 2rem; height: 80px; display: flex;
+            justify-content: space-between; align-items: center; z-index: 1000;
+        }
+        .logo-container { display: flex; align-items: center; }
+        .logo-container img { width: 50px; }
+        .logo-container span { font-weight: 600; font-size: 1.2rem; margin-left: 1rem; }
+        .nav-menu { display: flex; align-items: center; gap: 1.5rem; }
+        .nav-menu a { text-decoration: none; color: var(--text-color); font-weight: 500; }
+        .nav-menu a.active { color: var(--primary-color); }
+        .admin-menu { display: none; }
+        .user-profile { display: flex; align-items: center; gap: 1rem; }
+        .user-profile #welcome-message { font-size: 0.9rem; }
+        .btn-logout { background-color: #dc3545; color: white; padding: 8px 15px; border: none; border-radius: 8px; cursor: pointer; font-family: 'Prompt', sans-serif; }
+        
+        .container { max-width: 900px; margin: 2rem auto; padding: 0 2rem; }
+        .profile-card {
+            background-color: var(--white-color); padding: 2.5rem;
+            border-radius: var(--border-radius); box-shadow: var(--box-shadow);
+        }
+        .profile-card h1 { text-align: center; margin-bottom: 2rem; font-size: 1.8rem; }
+        .form-section-header {
+            font-size: 1.2rem; font-weight: 600; margin-top: 2rem;
+            margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary-color);
+        }
+        .form-grid {
+            display: grid; grid-template-columns: 1fr; gap: 1.5rem;
+        }
+        @media (min-width: 768px) { .form-grid { grid-template-columns: 1fr 1fr; } .grid-col-span-2 { grid-column: span 2; } }
+        .input-group label { display: block; font-weight: 500; margin-bottom: 0.5rem; }
+        .input-group input, .input-group select {
+            width: 100%; padding: 12px 15px; border: 1px solid #ddd;
+            border-radius: 8px; font-family: 'Prompt', sans-serif; font-size: 1rem;
+        }
+        .input-group input:disabled { background-color: #f5f5f5; cursor: not-allowed; }
+
+        .image-upload-group { text-align: center; }
+        .current-image {
+            width: 120px; height: 120px; border-radius: 50%;
+            border: 3px solid #eee; object-fit: cover; margin-bottom: 1rem;
+        }
+        .current-signature {
+            width: 200px; height: 100px; border-radius: 8px;
+            border: 2px solid #eee; object-fit: contain; margin-bottom: 1rem;
+            background-color: #fafafa; padding: 5px;
+        }
+        .btn-change-pic {
+            background-color: var(--primary-color); color: white; padding: 8px 15px;
+            border: none; border-radius: 8px; cursor: pointer; font-family: 'Prompt', sans-serif;
+        }
+        input[type="file"] { display: none; }
+
+        .btn-update {
+            width: 100%; padding: 14px; margin-top: 1.5rem; border: none;
+            border-radius: 8px; background: var(--header-gradient);
+            color: var(--white-color); font-family: 'Prompt', sans-serif;
+            font-size: 1.1rem; font-weight: 600; cursor: pointer;
+        }
+        footer { text-align: center; padding: 2rem; margin-top: 2rem; color: var(--light-text-color); }
+    </style>
+</head>
+<body>
+
+    <header class="main-header"></header>
+    
+    <div class="container">
+        <div id="loader" style="text-align: center; padding: 4rem; font-size: 1.2rem;">กำลังโหลดข้อมูลโปรไฟล์...</div>
+        <div class="profile-card" id="profileContainer" style="display: none;">
+            <h1>👤 แก้ไขข้อมูลโปรไฟล์</h1>
+            <form id="profileForm">
+
+                <div class="form-section-header">ข้อมูลส่วนตัว</div>
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label for="username">ชื่อผู้ใช้งาน (Username)</label>
+                        <input type="text" id="username" disabled>
+                    </div>
+                    <div class="input-group">
+                        <label for="position">ตำแหน่ง</label>
+                        <input type="text" id="position" disabled>
+                    </div>
+                    <div class="input-group">
+                        <label for="prefix">คำนำหน้า</label>
+                        <select id="prefix" required>
+                            <option value="นาย">นาย</option>
+                            <option value="นาง">นาง</option>
+                            <option value="นางสาว">นางสาว</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="fullName">ชื่อ-นามสกุล</label>
+                        <input type="text" id="fullName" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="email">อีเมล</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="academicStanding">วิทยฐานะ</label>
+                        <select id="academicStanding" required>
+                           <option value="ไม่มีวิทยฐานะ">ไม่มีวิทยฐานะ</option>
+                           <option value="ครูผู้ช่วย">ครูผู้ช่วย</option>
+                           <option value="คศ.1">คศ.1</option>
+                           <option value="ครูชำนาญการ">ครูชำนาญการ</option>
+                           <option value="ครูชำนาญการพิเศษ">ครูชำนาญการพิเศษ</option>
+                           <option value="ครูเชี่ยวชาญ">ครูเชี่ยวชาญ</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section-header">รูปภาพและลายเซ็นต์</div>
+                <div class="form-grid">
+                    <div class="image-upload-group">
+                        <label>รูปประจำตัว</label>
+                        <img id="currentProfilePic" src="https://via.placeholder.com/120" class="current-image" alt="Profile Picture">
+                        <input type="file" id="newProfilePic" accept="image/*">
+                        <label for="newProfilePic" class="btn-change-pic">เปลี่ยนรูป</label>
+                    </div>
+                    <div class="image-upload-group">
+                        <label>รูปลายเซ็นต์</label>
+                        <img id="currentSignature" src="https://via.placeholder.com/200x100" class="current-signature" alt="Signature">
+                        <input type="file" id="newSignature" accept="image/*">
+                        <label for="newSignature" class="btn-change-pic">เปลี่ยนลายเซ็นต์</label>
+                    </div>
+                </div>
+
+                <div class="form-section-header">เปลี่ยนรหัสผ่าน</div>
+                <p style="color: var(--light-text-color); text-align: center; margin-bottom: 1.5rem;">กรอกเฉพาะในกรณีที่ต้องการเปลี่ยนรหัสผ่านใหม่เท่านั้น</p>
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label for="newPassword">รหัสผ่านใหม่</label>
+                        <input type="password" id="newPassword" autocomplete="new-password">
+                    </div>
+                    <div class="input-group">
+                        <label for="confirmPassword">ยืนยันรหัสผ่านใหม่</label>
+                        <input type="password" id="confirmPassword" autocomplete="new-password">
+                    </div>
+                </div>
+                
+                <div class="grid-col-span-2">
+                   <button type="submit" class="btn-update">อัปเดตข้อมูล</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <footer>
+        <p>พัฒนาโดย Mr.Boonchai Boonsopon © 2025 ระบบแผนการสอนออนไลน์</p>
+    </footer>
+
+    <script>
+        const WEB_APP_URL = '<?= ScriptApp.getService().getUrl() ?>';
+        let loggedInUser = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            authenticateUser();
+            setupPage();
+            fetchAndRenderProfile();
+        });
+
+        function authenticateUser() {
+            const userData = sessionStorage.getItem('loggedInUser');
+            if (!userData) { window.location.href = WEB_APP_URL + '?page=Index'; return; }
+            loggedInUser = JSON.parse(userData);
+        }
+        
+function setupPage() {
+          // Dynamically create header to ensure consistency
+          const header = document.querySelector('.main-header');
+          const isAdmin = ['Admin', 'ฝ่ายวิชาการ'].includes(loggedInUser.position);
+          const isApprover = ['รองผู้อำนวยการสถานศึกษา', 'ผู้อำนวยการสถานศึกษา'].includes(loggedInUser.position);
+
+          // สร้างโครงสร้าง HTML ของ Header ที่มี ID ครบทุกเมนู
+          header.innerHTML = `
+              <div class="logo-container">
+                  <img src="https://img5.pic.in.th/file/secure-sv1/-sena-bg.png" alt="Logo">
+                  <span>ระบบแผนการสอน</span>
+              </div>
+              <nav class="nav-menu">
+                  <a href="#" id="nav-submission" class="nav-link">📝 ส่งงาน</a>
+                  <a href="#" id="nav-dashboard" class="nav-link">📊 แดชบอร์ด</a>
+                  <a href="#" id="nav-profile" class="nav-link">👤 โปรไฟล์</a>
+                  <a href="#" id="nav-admin-users" class="nav-link admin-menu">⚙️ จัดการผู้ใช้</a>
+                  <a href="#" id="nav-admin-log" class="nav-link admin-menu">🔍 ตรวจสอบ Log</a>
+              </nav>
+              <div class="user-profile">
+                  <span id="welcome-message">ยินดีต้อนรับ, คุณ ${loggedInUser.fullName}</span>
+                  <button id="logoutButton" class="btn-logout">ออกจากระบบ</button>
+              </div>
+          `;
+          
+          // แสดงเมนูสำหรับ Admin/ฝ่ายวิชาการ และผู้บริหาร
+          if (isAdmin || isApprover) {
+             document.querySelectorAll('.admin-menu').forEach(el => el.style.display = 'inline-block');
+          }
+
+          // Setup Logout Button
+          document.getElementById('logoutButton').addEventListener('click', () => {
+              sessionStorage.removeItem('loggedInUser');
+              window.location.href = WEB_APP_URL + '?page=Index';
+          });
+          
+          // เรียกใช้ฟังก์ชันนำทางที่เราสร้างขึ้น
+          setupNavigation('Profile');
+      }
+
+        function fetchAndRenderProfile() {
+            google.script.run
+                .withSuccessHandler(profile => {
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('profileContainer').style.display = 'block';
+                    populateForm(profile);
+                })
+                .withFailureHandler(onFailure)
+                .getUserProfile(loggedInUser.username);
+        }
+
+        function populateForm(profile) {
+            document.getElementById('username').value = profile.username;
+            document.getElementById('position').value = profile.position;
+            document.getElementById('prefix').value = profile.prefix;
+            document.getElementById('fullName').value = profile.fullName;
+            document.getElementById('email').value = profile.email;
+            document.getElementById('academicStanding').value = profile.academicStanding;
+            document.getElementById('currentProfilePic').src = profile.profilePicUrl;
+            document.getElementById('currentSignature').src = profile.signatureUrl;
+        }
+
+        document.getElementById('profileForm').addEventListener('submit', handleProfileUpdate);
+        document.getElementById('newProfilePic').addEventListener('change', e => previewImage(e.target, 'currentProfilePic'));
+        document.getElementById('newSignature').addEventListener('change', e => previewImage(e.target, 'currentSignature'));
+        
+        async function handleProfileUpdate(e) {
+            e.preventDefault();
+            
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword && newPassword !== confirmPassword) {
+                Swal.fire('ข้อผิดพลาด', 'รหัสผ่านใหม่และการยืนยันไม่ตรงกัน', 'error');
+                return;
+            }
+
+            Swal.fire({ title: 'กำลังอัปเดตข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            try {
+                const profileData = {
+                    username: loggedInUser.username,
+                    prefix: document.getElementById('prefix').value,
+                    fullName: document.getElementById('fullName').value,
+                    academicStanding: document.getElementById('academicStanding').value,
+                    email: document.getElementById('email').value,
+                };
+                
+                if (newPassword) profileData.newPassword = newPassword;
+
+                const picFile = document.getElementById('newProfilePic').files[0];
+                const sigFile = document.getElementById('newSignature').files[0];
+
+                if (picFile) profileData.profilePic = await fileToBase64(picFile);
+                if (sigFile) profileData.signature = await fileToBase64(sigFile);
+                
+                google.script.run
+                    .withSuccessHandler(response => {
+                        if (response.success) {
+                            Swal.fire('สำเร็จ!', response.message, 'success')
+                                .then(() => {
+                                    // Update sessionStorage if name changed
+                                    if(loggedInUser.fullName !== profileData.fullName) {
+                                      let updatedUser = JSON.parse(sessionStorage.getItem('loggedInUser'));
+                                      updatedUser.fullName = profileData.fullName;
+                                      sessionStorage.setItem('loggedInUser', JSON.stringify(updatedUser));
+                                    }
+                                    location.reload(); // Reload to see all changes
+                                });
+                        } else {
+                            onFailure({ message: response.message });
+                        }
+                    })
+                    .withFailureHandler(onFailure)
+                    .updateUserProfile(profileData);
+
+            } catch(error) {
+                onFailure(error);
+            }
+        }
+        
+        function previewImage(input, previewId) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = e => { document.getElementById(previewId).src = e.target.result; }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+        
+        function onFailure(error) {
+            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: error.message });
+        }
+
+/**
+ * Sets up navigation links and highlights the active page.
+ * @param {string} activePage - The name of the current page ('Dashboard', 'SubmissionForm', etc.)
+ */
+function setupNavigation(activePage) {
+    const navLinks = {
+        'SubmissionForm': document.getElementById('nav-submission'),
+        'Dashboard': document.getElementById('nav-dashboard'),
+        'Profile': document.getElementById('nav-profile'),
+        'Admin': document.getElementById('nav-admin-users'),
+        'AdminLog': document.getElementById('nav-admin-log')
+    };
+
+    // Add click event listeners to all links
+    for (const [page, element] of Object.entries(navLinks)) {
+        if (element) {
+            // Highlight the active page link
+            if (page === activePage) {
+                element.classList.add('active');
+            } else {
+                element.classList.remove('active');
+            }
+
+            // Set up the click action to navigate
+            element.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = `${WEB_APP_URL}?page=${page}`;
+            });
+        }
+    }
+}
+
+    </script>
+
+</body>
+</html>
