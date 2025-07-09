@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการผู้ใช้ - ระบบส่งแผนการสอนออนไลน์</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root {
+            --header-gradient: linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%);
+            --primary-color: #3a47d5;
+            --secondary-color: #f4f7fc;
+            --text-color: #333;
+            --light-text-color: #777;
+            --white-color: #ffffff;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+        }
+        body {
+            font-family: 'Prompt', sans-serif; background-color: var(--secondary-color);
+            color: var(--text-color); margin: 0; padding-top: 80px;
+        }
+        .main-header {
+            position: fixed; top: 0; left: 0; width: 100%; background: var(--white-color);
+            box-shadow: var(--box-shadow); padding: 0 2rem; height: 80px; display: flex;
+            justify-content: space-between; align-items: center; z-index: 1000;
+        }
+        .logo-container { display: flex; align-items: center; }
+        .logo-container img { width: 50px; }
+        .logo-container span { font-weight: 600; font-size: 1.2rem; margin-left: 1rem; }
+        .nav-menu { display: flex; align-items: center; gap: 1.5rem; }
+        .nav-menu a { text-decoration: none; color: var(--text-color); font-weight: 500; }
+        .nav-menu a.active { color: var(--primary-color); font-weight: 600; }
+        .admin-menu { display: none; }
+        .user-profile { display: flex; align-items: center; gap: 1rem; }
+        .btn-logout { background-color: #dc3545; color: white; padding: 8px 15px; border: none; border-radius: 8px; cursor: pointer; }
+        
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 2rem; }
+        .admin-card {
+            background-color: var(--white-color); padding: 2rem;
+            border-radius: var(--border-radius); box-shadow: var(--box-shadow);
+        }
+        .admin-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1.5rem; border-bottom: 1px solid #eee; padding-bottom: 1rem;
+        }
+        .admin-header h1 { margin: 0; font-size: 1.8rem; }
+        .filter-tabs button {
+            background: #eee; border: none; padding: 10px 20px;
+            border-radius: 8px; cursor: pointer; font-family: 'Prompt', sans-serif;
+            font-size: 0.9rem; font-weight: 500; margin-left: 0.5rem;
+        }
+        .filter-tabs button.active { background: var(--primary-color); color: white; }
+        
+        .table-container { overflow-x: auto; }
+        table {
+            width: 100%; border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+        th, td {
+            padding: 12px 15px; text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        thead th {
+            background-color: #f8f9fa; font-weight: 600;
+        }
+        tbody tr:hover { background-color: #f5f5f5; }
+        
+        .status-badge {
+            padding: 5px 12px; border-radius: 20px; font-weight: 500;
+            font-size: 0.8rem; color: white; text-align: center;
+        }
+        .status-badge.pending { background-color: var(--warning-color); }
+        .status-badge.approved { background-color: var(--success-color); }
+
+        .btn-approve {
+            background-color: var(--success-color); color: white; padding: 6px 12px;
+            border: none; border-radius: 6px; cursor: pointer; font-family: 'Prompt', sans-serif;
+        }
+        .btn-approve:hover { opacity: 0.8; }
+        
+        #accessDenied, #loader { text-align: center; padding: 4rem; font-size: 1.5rem; color: var(--light-text-color); }
+
+        footer { text-align: center; padding: 2rem; margin-top: 2rem; color: var(--light-text-color); }
+    </style>
+</head>
+<body>
+
+    <header class="main-header"></header>
+    
+    <div class="container">
+        <div id="accessDenied" style="display: none;">
+            <h1>🚫 ไม่สามารถเข้าถึงได้</h1>
+            <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
+        </div>
+
+        <div id="adminContainer" style="display: none;">
+            <div class="admin-card">
+                <div class="admin-header">
+                    <h1>⚙️ จัดการผู้ใช้งาน</h1>
+                    <div class="filter-tabs">
+                        <button id="filterAll" class="active">ผู้ใช้ทั้งหมด</button>
+                        <button id="filterPending">รอการอนุมัติ</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ชื่อ-นามสกุล</th>
+                                <th>ตำแหน่ง</th>
+                                <th>Username</th>
+                                <th>อีเมล</th>
+                                <th>สถานะ</th>
+                                <th>จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTableBody">
+                            </tbody>
+                    </table>
+                </div>
+                <div id="loader" style="display: none;">กำลังโหลดข้อมูล...</div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>พัฒนาโดย Mr.Boonchai Boonsopon © 2025 ระบบแผนการสอนออนไลน์</p>
+    </footer>
+
+    <script>
+        const WEB_APP_URL = '<?= ScriptApp.getService().getUrl() ?>';
+        let loggedInUser = null;
+        let allUsersData = [];
+        let currentFilter = 'all';
+
+        window.addEventListener('DOMContentLoaded', () => {
+            authenticateAdmin();
+            setupPage();
+            if (loggedInUser && (loggedInUser.position === 'Admin' || loggedInUser.position === 'ฝ่ายวิชาการ')) { // Let 'ฝ่ายวิชาการ' manage users too
+                document.getElementById('adminContainer').style.display = 'block';
+                setupEventListeners();
+                fetchUsers();
+            } else {
+                document.getElementById('accessDenied').style.display = 'block';
+            }
+        });
+
+        function authenticateAdmin() {
+            const userData = sessionStorage.getItem('loggedInUser');
+            if (!userData) {
+                window.location.href = WEB_APP_URL + '?page=Index';
+                return;
+            }
+            loggedInUser = JSON.parse(userData);
+            // We allow specific roles to access this page
+            const allowedRoles = ['Admin', 'ฝ่ายวิชาการ'];
+            if (!allowedRoles.includes(loggedInUser.position)) {
+                 document.getElementById('adminContainer').style.display = 'none';
+                 document.getElementById('accessDenied').style.display = 'block';
+                 // We stop further execution by not calling fetchUsers etc.
+            }
+        }
+        
+function setupPage() {
+          const header = document.querySelector('.main-header');
+          if (!loggedInUser) return; // Stop if not authenticated
+          const isAdmin = ['Admin', 'ฝ่ายวิชาการ'].includes(loggedInUser.position);
+
+          // สร้างโครงสร้าง HTML ของ Header ที่มี ID ครบทุกเมนู และใช้ href="#"
+          header.innerHTML = `
+              <div class="logo-container">
+                  <img src="https://img5.pic.in.th/file/secure-sv1/-sena-bg.png" alt="Logo">
+                  <span>ระบบแผนการสอน</span>
+              </div>
+              <nav class="nav-menu">
+                  <a href="#" id="nav-submission" class="nav-link">📝 ส่งงาน</a>
+                  <a href="#" id="nav-dashboard" class="nav-link">📊 แดชบอร์ด</a>
+                  <a href="#" id="nav-profile" class="nav-link">👤 โปรไฟล์</a>
+                  <a href="#" id="nav-admin-users" class="nav-link admin-menu">⚙️ จัดการผู้ใช้</a>
+                  <a href="#" id="nav-admin-log" class="nav-link admin-menu">🔍 ตรวจสอบ Log</a>
+              </nav>
+              <div class="user-profile">
+                  <span id="welcome-message">ยินดีต้อนรับ, คุณ ${loggedInUser.fullName}</span>
+                  <button id="logoutButton" class="btn-logout">ออกจากระบบ</button>
+              </div>
+          `;
+
+          // แสดงเมนูสำหรับ Admin/ฝ่ายวิชาการ
+          if (isAdmin) {
+             document.querySelectorAll('.admin-menu').forEach(el => el.style.display = 'inline-block');
+          }
+
+          // Setup Logout Button
+          document.getElementById('logoutButton').addEventListener('click', () => {
+              sessionStorage.removeItem('loggedInUser');
+              window.location.href = WEB_APP_URL + '?page=Index';
+          });
+          
+          // เรียกใช้ฟังก์ชันนำทางที่เราสร้างขึ้น
+          setupNavigation('Admin');
+      }
+        
+        function setupEventListeners() {
+            document.getElementById('filterAll').addEventListener('click', () => setFilter('all'));
+            document.getElementById('filterPending').addEventListener('click', () => setFilter('pending'));
+        }
+
+        function fetchUsers() {
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('userTableBody').innerHTML = ''; // Clear table
+            google.script.run
+                .withSuccessHandler(response => {
+                    document.getElementById('loader').style.display = 'none';
+                    allUsersData = response;
+                    renderUserTable();
+                })
+                .withFailureHandler(onFailure)
+                .getUsersForAdmin();
+        }
+
+        function renderUserTable() {
+            const tableBody = document.getElementById('userTableBody');
+            tableBody.innerHTML = ''; // Clear previous render
+
+            const filteredData = currentFilter === 'all' 
+                ? allUsersData 
+                : allUsersData.filter(user => user.status === 'รอการอนุมัติ');
+
+            if (filteredData.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">ไม่พบข้อมูลผู้ใช้</td></tr>';
+                return;
+            }
+            
+            filteredData.forEach(user => {
+                const row = tableBody.insertRow();
+                const statusClass = user.status === 'อนุมัติแล้ว' ? 'approved' : 'pending';
+                
+                row.innerHTML = `
+                    <td>${user.prefix} ${user.fullName}</td>
+                    <td>${user.position}</td>
+                    <td>${user.username}</td>
+                    <td>${user.email}</td>
+                    <td><span class="status-badge ${statusClass}">${user.status}</span></td>
+                    <td id="action-${user.username}"></td>
+                `;
+
+                if (user.status === 'รอการอนุมัติ') {
+                    const approveButton = document.createElement('button');
+                    approveButton.textContent = 'อนุมัติ';
+                    approveButton.className = 'btn-approve';
+                    approveButton.onclick = () => handleApproveUser(user.username, user.fullName);
+                    row.querySelector(`#action-${user.username}`).appendChild(approveButton);
+                }
+            });
+        }
+        
+        function setFilter(filterType) {
+            currentFilter = filterType;
+            document.getElementById('filterAll').classList.toggle('active', filterType === 'all');
+            document.getElementById('filterPending').classList.toggle('active', filterType === 'pending');
+            renderUserTable();
+        }
+
+        function handleApproveUser(username, fullName) {
+            Swal.fire({
+                title: 'ยืนยันการอนุมัติ',
+                text: `คุณต้องการอนุมัติบัญชีผู้ใช้ "${fullName}" (${username}) ใช่หรือไม่?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                confirmButtonText: 'ใช่, อนุมัติเลย',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'กำลังดำเนินการ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    google.script.run
+                        .withSuccessHandler(response => {
+                            if (response.success) {
+                                Swal.fire('สำเร็จ!', response.message, 'success');
+                                fetchUsers(); // Refresh the user list
+                            } else {
+                                onFailure({ message: response.message });
+                            }
+                        })
+                        .withFailureHandler(onFailure)
+                        .approveUser(loggedInUser.username, username);
+                }
+            });
+        }
+        
+        function onFailure(error) {
+            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: error.message });
+        }
+
+/**
+ * Sets up navigation links and highlights the active page.
+ * @param {string} activePage - The name of the current page ('Dashboard', 'SubmissionForm', etc.)
+ */
+function setupNavigation(activePage) {
+    const navLinks = {
+        'SubmissionForm': document.getElementById('nav-submission'),
+        'Dashboard': document.getElementById('nav-dashboard'),
+        'Profile': document.getElementById('nav-profile'),
+        'Admin': document.getElementById('nav-admin-users'),
+        'AdminLog': document.getElementById('nav-admin-log')
+    };
+
+    // Add click event listeners to all links
+    for (const [page, element] of Object.entries(navLinks)) {
+        if (element) {
+            // Highlight the active page link
+            if (page === activePage) {
+                element.classList.add('active');
+            } else {
+                element.classList.remove('active');
+            }
+
+            // Set up the click action to navigate
+            element.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = `${WEB_APP_URL}?page=${page}`;
+            });
+        }
+    }
+}
+
+    </script>
+</body>
+</html>
