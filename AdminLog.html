@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตรวจสอบ Log - ระบบส่งแผนการสอนออนไลน์</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root {
+            --header-gradient: linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%);
+            --primary-color: #3a47d5;
+            --secondary-color: #f4f7fc;
+            --text-color: #333;
+            --light-text-color: #777;
+            --white-color: #ffffff;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            /* Action Colors */
+            --color-login: #28a745;
+            --color-submit: #007bff;
+            --color-approve: #6f42c1;
+            --color-revision: #fd7e14;
+            --color-update: #17a2b8;
+            --color-register: #20c997;
+            --color-error: #dc3545;
+        }
+        body {
+            font-family: 'Prompt', sans-serif; background-color: var(--secondary-color);
+            color: var(--text-color); margin: 0; padding-top: 80px;
+        }
+        .main-header {
+            position: fixed; top: 0; left: 0; width: 100%; background: var(--white-color);
+            box-shadow: var(--box-shadow); padding: 0 2rem; height: 80px; display: flex;
+            justify-content: space-between; align-items: center; z-index: 1000;
+        }
+        .logo-container { display: flex; align-items: center; }
+        .logo-container img { width: 50px; }
+        .logo-container span { font-weight: 600; font-size: 1.2rem; margin-left: 1rem; }
+        .nav-menu { display: flex; align-items: center; gap: 1.5rem; }
+        .nav-menu a { text-decoration: none; color: var(--text-color); font-weight: 500; }
+        .nav-menu a.active { color: var(--primary-color); font-weight: 600; }
+        .admin-menu { display: none; }
+        .user-profile { display: flex; align-items: center; gap: 1rem; }
+        .btn-logout { background-color: #dc3545; color: white; padding: 8px 15px; border: none; border-radius: 8px; cursor: pointer; }
+        
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 2rem; }
+        .log-card {
+            background-color: var(--white-color); padding: 2rem;
+            border-radius: var(--border-radius); box-shadow: var(--box-shadow);
+        }
+        .log-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1.5rem; border-bottom: 1px solid #eee; padding-bottom: 1rem;
+        }
+        .log-header h1 { margin: 0; font-size: 1.8rem; }
+        .log-controls { display: flex; gap: 1rem; }
+        .log-controls input[type="search"] {
+            padding: 10px 15px; border: 1px solid #ddd; border-radius: 8px;
+            font-family: 'Prompt', sans-serif; width: 250px;
+        }
+        .btn-refresh {
+            background: var(--primary-color); color: white; border: none;
+            padding: 0 20px; border-radius: 8px; cursor: pointer;
+        }
+        
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        thead th { background-color: #f8f9fa; font-weight: 600; }
+        tbody tr:hover { background-color: #f5f5f5; }
+        
+        .action-tag {
+            padding: 4px 10px; border-radius: 6px; color: white;
+            font-weight: 500; display: inline-block;
+        }
+        .action-LOGIN { background-color: var(--color-login); }
+        .action-SUBMIT_PLAN, .action-RESUBMIT_PLAN { background-color: var(--color-submit); }
+        .action-APPROVE_PLAN, .action-APPROVE_USER { background-color: var(--color-approve); }
+        .action-REQUEST_REVISION { background-color: var(--color-revision); }
+        .action-UPDATE_PROFILE { background-color: var(--color-update); }
+        .action-REGISTER { background-color: var(--color-register); }
+        .action-SYSTEM_ERROR, .action-NOTIFICATION_ERROR { background-color: var(--color-error); }
+        
+        #accessDenied, #loader { text-align: center; padding: 4rem; font-size: 1.5rem; color: var(--light-text-color); }
+
+        footer { text-align: center; padding: 2rem; margin-top: 2rem; color: var(--light-text-color); }
+    </style>
+</head>
+<body>
+
+    <header class="main-header"></header>
+    
+    <div class="container">
+        <div id="accessDenied" style="display: none;">
+            <h1>🚫 ไม่สามารถเข้าถึงได้</h1>
+            <p>หน้านี้สำหรับผู้ดูแลระบบเท่านั้น</p>
+        </div>
+
+        <div id="logContainer" style="display: none;">
+            <div class="log-card">
+                <div class="log-header">
+                    <h1>🔍 ตรวจสอบ Log การใช้งาน</h1>
+                    <div class="log-controls">
+                        <input type="search" id="searchInput" placeholder="ค้นหา...">
+                        <button id="refreshButton" class="btn-refresh">รีเฟรช</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>วัน-เวลา</th>
+                                <th>Username</th>
+                                <th>ประเภทกิจกรรม</th>
+                                <th>รายละเอียด</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logTableBody"></tbody>
+                    </table>
+                </div>
+                <div id="loader" style="display: none;">กำลังโหลดข้อมูล...</div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>พัฒนาโดย Mr.Boonchai Boonsopon © 2025 ระบบแผนการสอนออนไลน์</p>
+    </footer>
+
+    <script>
+        const WEB_APP_URL = '<?= ScriptApp.getService().getUrl() ?>';
+        let loggedInUser = null;
+        let allLogsData = [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            authenticateAdmin();
+            setupPage();
+            if (loggedInUser && loggedInUser.position === 'Admin') {
+                document.getElementById('logContainer').style.display = 'block';
+                setupEventListeners();
+                fetchLogs();
+            } else {
+                document.getElementById('accessDenied').style.display = 'block';
+            }
+        });
+
+        function authenticateAdmin() {
+            const userData = sessionStorage.getItem('loggedInUser');
+            if (!userData) { window.location.href = WEB_APP_URL + '?page=Index'; return; }
+            loggedInUser = JSON.parse(userData);
+            if (loggedInUser.position !== 'Admin') {
+                document.getElementById('logContainer').style.display = 'none';
+                document.getElementById('accessDenied').style.display = 'block';
+            }
+        }
+        
+function setupPage() {
+          const header = document.querySelector('.main-header');
+          if (!loggedInUser) return;
+          const isAdmin = ['Admin', 'ฝ่ายวิชาการ'].includes(loggedInUser.position);
+          const isApprover = ['รองผู้อำนวยการสถานศึกษา', 'ผู้อำนวยการสถานศึกษา'].includes(loggedInUser.position);
+
+          // สร้างโครงสร้าง HTML ของ Header ที่มี ID ครบทุกเมนู และใช้ href="#"
+          header.innerHTML = `
+              <div class="logo-container">
+                  <img src="https://img5.pic.in.th/file/secure-sv1/-sena-bg.png" alt="Logo">
+                  <span>ระบบแผนการสอน</span>
+              </div>
+              <nav class="nav-menu">
+                  <a href="#" id="nav-submission" class="nav-link">📝 ส่งงาน</a>
+                  <a href="#" id="nav-dashboard" class="nav-link">📊 แดชบอร์ด</a>
+                  <a href="#" id="nav-profile" class="nav-link">👤 โปรไฟล์</a>
+                  <a href="#" id="nav-admin-users" class="nav-link admin-menu">⚙️ จัดการผู้ใช้</a>
+                  <a href="#" id="nav-admin-log" class="nav-link admin-menu">🔍 ตรวจสอบ Log</a>
+              </nav>
+              <div class="user-profile">
+                  <span id="welcome-message">ยินดีต้อนรับ, คุณ ${loggedInUser.fullName}</span>
+                  <button id="logoutButton" class="btn-logout">ออกจากระบบ</button>
+              </div>
+          `;
+          
+          // แสดงเมนูสำหรับ Admin/ฝ่ายวิชาการ และผู้บริหาร
+          // ในหน้านี้ เราจะให้ Admin เท่านั้นที่เห็นเมนู Log
+          if (isAdmin || isApprover) {
+             document.getElementById('nav-admin-users').style.display = 'inline-block';
+          }
+          if (loggedInUser.position === 'Admin') {
+             document.getElementById('nav-admin-log').style.display = 'inline-block';
+          }
+
+
+          // Setup Logout Button
+          document.getElementById('logoutButton').addEventListener('click', () => {
+              sessionStorage.removeItem('loggedInUser');
+              window.location.href = WEB_APP_URL + '?page=Index';
+          });
+          
+          // เรียกใช้ฟังก์ชันนำทางที่เราสร้างขึ้น
+          setupNavigation('AdminLog');
+      }
+        
+        function setupEventListeners() {
+            document.getElementById('refreshButton').addEventListener('click', fetchLogs);
+            document.getElementById('searchInput').addEventListener('input', handleSearch);
+        }
+
+        function fetchLogs() {
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('logTableBody').innerHTML = '';
+            google.script.run
+                .withSuccessHandler(response => {
+                    document.getElementById('loader').style.display = 'none';
+                    allLogsData = response;
+                    renderLogTable(allLogsData);
+                })
+                .withFailureHandler(onFailure)
+                .getActivityLog();
+        }
+
+        function renderLogTable(logs) {
+            const tableBody = document.getElementById('logTableBody');
+            tableBody.innerHTML = '';
+
+            if (logs.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem;">ไม่พบข้อมูล Log</td></tr>';
+                return;
+            }
+            
+            logs.forEach(log => {
+                const row = tableBody.insertRow();
+                const timestamp = new Date(log.Timestamp);
+                const formattedDate = timestamp.toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' });
+                const formattedTime = timestamp.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+
+                row.innerHTML = `
+                    <td>${formattedDate} ${formattedTime}</td>
+                    <td>${log.username}</td>
+                    <td><span class="action-tag action-${log.Action}">${log.Action}</span></td>
+                    <td>${log.Details}</td>
+                `;
+            });
+        }
+        
+        function handleSearch(event) {
+            const searchTerm = event.target.value.toLowerCase();
+            if (!searchTerm) {
+                renderLogTable(allLogsData);
+                return;
+            }
+            const filteredLogs = allLogsData.filter(log => {
+                return Object.values(log).some(value => 
+                    String(value).toLowerCase().includes(searchTerm)
+                );
+            });
+            renderLogTable(filteredLogs);
+        }
+        
+        function onFailure(error) {
+            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: error.message });
+        }
+
+/**
+ * Sets up navigation links and highlights the active page.
+ * @param {string} activePage - The name of the current page ('Dashboard', 'SubmissionForm', etc.)
+ */
+function setupNavigation(activePage) {
+    const navLinks = {
+        'SubmissionForm': document.getElementById('nav-submission'),
+        'Dashboard': document.getElementById('nav-dashboard'),
+        'Profile': document.getElementById('nav-profile'),
+        'Admin': document.getElementById('nav-admin-users'),
+        'AdminLog': document.getElementById('nav-admin-log')
+    };
+
+    // Add click event listeners to all links
+    for (const [page, element] of Object.entries(navLinks)) {
+        if (element) {
+            // Highlight the active page link
+            if (page === activePage) {
+                element.classList.add('active');
+            } else {
+                element.classList.remove('active');
+            }
+
+            // Set up the click action to navigate
+            element.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = `${WEB_APP_URL}?page=${page}`;
+            });
+        }
+    }
+}
+
+    </script>
+</body>
+</html>
