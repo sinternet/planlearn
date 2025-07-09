@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ส่งแผนการสอน - ระบบส่งแผนการสอนออนไลน์</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root {
+            --header-gradient: linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%);
+            --primary-color: #3a47d5;
+            --secondary-color: #f4f7fc;
+            --text-color: #333;
+            --light-text-color: #777;
+            --white-color: #ffffff;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            margin: 0;
+            padding-top: 80px; /* Space for fixed header */
+        }
+
+        /* --- Header & Navigation (Copied from Dashboard for consistency) --- */
+        .main-header {
+            position: fixed; top: 0; left: 0; width: 100%;
+            background: var(--white-color); box-shadow: var(--box-shadow);
+            padding: 0 2rem; height: 80px; display: flex;
+            justify-content: space-between; align-items: center; z-index: 1000;
+        }
+        .logo-container { display: flex; align-items: center; }
+        .logo-container img { width: 50px; }
+        .logo-container span { font-weight: 600; font-size: 1.2rem; margin-left: 1rem; }
+        .nav-menu { display: flex; align-items: center; gap: 1.5rem; }
+        .nav-menu a { text-decoration: none; color: var(--text-color); font-weight: 500; transition: color 0.3s; }
+        .nav-menu a:hover, .nav-menu a.active { color: var(--primary-color); }
+        .admin-menu { display: none; }
+        .user-profile { display: flex; align-items: center; gap: 1rem; }
+        .user-profile #welcome-message { font-size: 0.9rem; }
+        .btn-logout { background-color: #dc3545; color: white; padding: 8px 15px; border: none; border-radius: 8px; cursor: pointer; font-family: 'Prompt', sans-serif; }
+        
+        /* --- Main Content --- */
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .submission-card {
+            background-color: var(--white-color);
+            padding: 2.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+        
+        .submission-card h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1.8rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        @media (min-width: 768px) {
+            .form-grid { grid-template-columns: 1fr 1fr; }
+            .grid-col-span-2 { grid-column: span 2; }
+        }
+
+        .input-group label {
+            display: block; font-weight: 500;
+            margin-bottom: 0.5rem; font-size: 0.9rem;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%; padding: 12px 15px; border: 1px solid #ddd;
+            border-radius: 8px; font-family: 'Prompt', sans-serif;
+            font-size: 1rem; transition: border-color 0.3s;
+        }
+        .input-group input:disabled, .input-group select:disabled {
+            background-color: #f5f5f5; cursor: not-allowed;
+        }
+        .input-group input:focus, .input-group select:focus {
+            outline: none; border-color: var(--primary-color);
+        }
+
+        .file-input-group {
+            border: 2px dashed #ddd; border-radius: 8px; padding: 1.5rem;
+            text-align: center; cursor: pointer; transition: border-color 0.3s;
+        }
+        .file-input-group:hover { border-color: var(--primary-color); }
+        .file-input-group input[type="file"] { display: none; }
+        .file-input-group .file-label { color: var(--primary-color); font-weight: 500; }
+        .file-input-group .file-name {
+            display: block; margin-top: 0.5rem; font-size: 0.9rem;
+            color: var(--light-text-color); word-break: break-all;
+        }
+
+        .btn-submit {
+            width: 100%; padding: 14px; margin-top: 1.5rem; border: none;
+            border-radius: 8px; background: var(--header-gradient);
+            color: var(--white-color); font-family: 'Prompt', sans-serif;
+            font-size: 1.1rem; font-weight: 600; cursor: pointer;
+            transition: opacity 0.3s;
+        }
+        .btn-submit:hover { opacity: 0.9; }
+
+        footer { text-align: center; padding: 2rem; margin-top: 2rem; color: var(--light-text-color); }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        </header>
+    
+    <div class="container">
+        <div class="submission-card">
+            <h1>📝 แบบฟอร์มส่งแผนการสอน</h1>
+            <form id="submissionForm">
+                <div class="form-grid">
+
+                    <div class="input-group">
+                        <label for="academicYear">ปีการศึกษา</label>
+                        <select id="academicYear" required></select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="submitterName">ชื่อ-นามสกุล (ผู้ส่ง)</label>
+                        <input type="text" id="submitterName" disabled>
+                    </div>
+
+                    <div class="input-group grid-col-span-2">
+                        <label for="learningArea">กลุ่มสาระการเรียนรู้</label>
+                        <input type="text" id="learningArea" placeholder="เช่น วิทยาศาสตร์และเทคโนโลยี" required>
+                    </div>
+
+                    <hr class="grid-col-span-2" style="border: 1px solid #f0f0f0;">
+
+                    <div class="input-group">
+                        <label for="class">ชั้นเรียน</label>
+                        <select id="class" required>
+                            <option value="">-- กรุณาเลือก --</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="subjectName">ชื่อวิชา</label>
+                        <select id="subjectName" required disabled>
+                            <option value="">-- รอเลือกชั้นเรียน --</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="subjectCode">รหัสวิชา</label>
+                        <select id="subjectCode" required disabled>
+                            <option value="">-- รอเลือกชื่อวิชา --</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="course">รายวิชา</label>
+                        <select id="course" required disabled>
+                            <option value="">-- รอเลือกรหัสวิชา --</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group grid-col-span-2">
+                        <label for="additionalLink">ลิงค์ URL เพิ่มเติม (ถ้ามี)</label>
+                        <input type="url" id="additionalLink" placeholder="https://www.example.com">
+                    </div>
+
+                    <hr class="grid-col-span-2" style="border: 1px solid #f0f0f0;">
+                    
+                    <div class="input-group grid-col-span-2">
+                        <label>ไฟล์แนบ 1: โครงสร้างรายวิชา (.pdf เท่านั้น)</label>
+                        <label for="file1" class="file-input-group">
+                            <span class="file-label">คลิกเพื่ออัปโหลด</span>
+                            <span class="file-name" id="file1Name">ยังไม่ได้เลือกไฟล์</span>
+                        </label>
+                        <input type="file" id="file1" accept=".pdf" required>
+                    </div>
+                    
+                    <div class="input-group grid-col-span-2">
+                        <label>ไฟล์แนบ 2: แผนการจัดการเรียนรู้ (.pdf เท่านั้น)</label>
+                        <label for="file2" class="file-input-group">
+                            <span class="file-label">คลิกเพื่ออัปโหลด</span>
+                            <span class="file-name" id="file2Name">ยังไม่ได้เลือกไฟล์</span>
+                        </label>
+                        <input type="file" id="file2" accept=".pdf" required>
+                    </div>
+
+                    <div class="grid-col-span-2">
+                       <button type="submit" class="btn-submit">ส่งแผนการสอน</button>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <footer>
+        <p>พัฒนาโดย Mr.Boonchai Boonsopon © 2025 ระบบแผนการสอนออนไลน์</p>
+    </footer>
+
+    <script>
+        // --- GLOBAL VARIABLES ---
+        const WEB_APP_URL = '<?= ScriptApp.getService().getUrl() ?>';
+        let loggedInUser = null;
+        let subjectData = [];
+
+/**
+ * Sets up navigation links and highlights the active page.
+ * @param {string} activePage - The name of the current page ('Dashboard', 'SubmissionForm', etc.)
+ */
+function setupNavigation(activePage) {
+    const navLinks = {
+        'SubmissionForm': document.getElementById('nav-submission'),
+        'Dashboard': document.getElementById('nav-dashboard'),
+        'Profile': document.getElementById('nav-profile'),
+        'Admin': document.getElementById('nav-admin-users'),
+        'AdminLog': document.getElementById('nav-admin-log')
+    };
+
+    // Add click event listeners to all links
+    for (const [page, element] of Object.entries(navLinks)) {
+        if (element) {
+            // Highlight the active page link
+            if (page === activePage) {
+                element.classList.add('active');
+            } else {
+                element.classList.remove('active');
+            }
+
+            // Set up the click action to navigate
+            element.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = `${WEB_APP_URL}?page=${page}`;
+            });
+        }
+    }
+}
+
+        // --- ON PAGE LOAD ---
+        window.addEventListener('DOMContentLoaded', () => {
+            authenticateUser();
+            setupPage();
+            initializeForm();
+        });
+
+        function authenticateUser() {
+            const userData = sessionStorage.getItem('loggedInUser');
+            if (!userData) {
+                window.location.href = WEB_APP_URL + '?page=Index';
+                return;
+            }
+            loggedInUser = JSON.parse(userData);
+        }
+        
+function setupPage() {
+          // Dynamically create header to ensure consistency
+          const header = document.querySelector('.main-header');
+          const isAdmin = ['Admin', 'ฝ่ายวิชาการ'].includes(loggedInUser.position);
+          const isApprover = ['รองผู้อำนวยการสถานศึกษา', 'ผู้อำนวยการสถานศึกษา'].includes(loggedInUser.position);
+
+          // สร้างโครงสร้าง HTML ของ Header ที่มี ID ครบทุกเมนู
+          header.innerHTML = `
+              <div class="logo-container">
+                  <img src="https://img5.pic.in.th/file/secure-sv1/-sena-bg.png" alt="Logo">
+                  <span>ระบบแผนการสอน</span>
+              </div>
+              <nav class="nav-menu">
+                  <a href="#" id="nav-submission" class="nav-link">📝 ส่งงาน</a>
+                  <a href="#" id="nav-dashboard" class="nav-link">📊 แดชบอร์ด</a>
+                  <a href="#" id="nav-profile" class="nav-link">👤 โปรไฟล์</a>
+                  <a href="#" id="nav-admin-users" class="nav-link admin-menu">⚙️ จัดการผู้ใช้</a>
+                  <a href="#" id="nav-admin-log" class="nav-link admin-menu">🔍 ตรวจสอบ Log</a>
+              </nav>
+              <div class="user-profile">
+                  <span id="welcome-message">ยินดีต้อนรับ, คุณ ${loggedInUser.fullName}</span>
+                  <button id="logoutButton" class="btn-logout">ออกจากระบบ</button>
+              </div>
+          `;
+          
+          // แสดงเมนูสำหรับ Admin/ฝ่ายวิชาการ
+          if (isAdmin || isApprover) {
+             document.querySelectorAll('.admin-menu').forEach(el => el.style.display = 'inline-block');
+          }
+
+          // Setup Logout Button
+          document.getElementById('logoutButton').addEventListener('click', () => {
+              sessionStorage.removeItem('loggedInUser');
+              window.location.href = WEB_APP_URL + '?page=Index';
+          });
+          
+          // เรียกใช้ฟังก์ชันนำทางที่เราสร้างขึ้น
+          setupNavigation('SubmissionForm');
+      }
+        
+        function initializeForm() {
+            // Autofill user name
+            document.getElementById('submitterName').value = loggedInUser.fullName;
+
+            // Populate academic year
+            const yearSelect = document.getElementById('academicYear');
+            const currentYear = new Date().getFullYear() + 543; // พ.ศ.
+            for (let i = 0; i < 3; i++) {
+                yearSelect.add(new Option(currentYear + i, currentYear + i));
+            }
+            
+            // Fetch data for dependent dropdowns
+            Swal.fire({ title: 'กำลังโหลดข้อมูลฟอร์ม...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            google.script.run
+                .withSuccessHandler(data => {
+                    subjectData = data;
+                    populateClassDropdown();
+                    Swal.close();
+                })
+                .withFailureHandler(onFailure)
+                .getDependentDropdownData();
+
+            // Add event listeners
+            document.getElementById('class').addEventListener('change', onClassChange);
+            document.getElementById('subjectName').addEventListener('change', onSubjectNameChange);
+            document.getElementById('subjectCode').addEventListener('change', onSubjectCodeChange);
+            document.getElementById('file1').addEventListener('change', (e) => updateFileName(e.target, 'file1Name'));
+            document.getElementById('file2').addEventListener('change', (e) => updateFileName(e.target, 'file2Name'));
+            document.getElementById('submissionForm').addEventListener('submit', handleSubmission);
+        }
+        
+        // --- DEPENDENT DROPDOWN LOGIC ---
+        function populateClassDropdown() {
+            const classSelect = document.getElementById('class');
+            const classes = [...new Set(subjectData.map(item => item.class))];
+            classes.forEach(c => classSelect.add(new Option(c, c)));
+        }
+
+        function onClassChange() {
+            const selectedClass = document.getElementById('class').value;
+            const subjectNameSelect = document.getElementById('subjectName');
+            resetAndDisable(subjectNameSelect, '-- รอเลือกชั้นเรียน --');
+            resetAndDisable(document.getElementById('subjectCode'), '-- รอเลือกชื่อวิชา --');
+            resetAndDisable(document.getElementById('course'), '-- รอเลือกรหัสวิชา --');
+
+            if(selectedClass) {
+                const subjectNames = [...new Set(subjectData.filter(item => item.class === selectedClass).map(item => item.subjectName))];
+                populateDropdown(subjectNameSelect, subjectNames, '-- เลือกชื่อวิชา --');
+                subjectNameSelect.disabled = false;
+            }
+        }
+
+        function onSubjectNameChange() {
+            const selectedClass = document.getElementById('class').value;
+            const selectedSubject = document.getElementById('subjectName').value;
+            const subjectCodeSelect = document.getElementById('subjectCode');
+            resetAndDisable(subjectCodeSelect, '-- รอเลือกชื่อวิชา --');
+            resetAndDisable(document.getElementById('course'), '-- รอเลือกรหัสวิชา --');
+
+            if(selectedSubject) {
+                const subjectCodes = [...new Set(subjectData.filter(item => item.class === selectedClass && item.subjectName === selectedSubject).map(item => item.subjectCode))];
+                populateDropdown(subjectCodeSelect, subjectCodes, '-- เลือกรหัสวิชา --');
+                subjectCodeSelect.disabled = false;
+            }
+        }
+
+        function onSubjectCodeChange() {
+            const selectedClass = document.getElementById('class').value;
+            const selectedSubject = document.getElementById('subjectName').value;
+            const selectedCode = document.getElementById('subjectCode').value;
+            const courseSelect = document.getElementById('course');
+            resetAndDisable(courseSelect, '-- รอเลือกรหัสวิชา --');
+            
+            if(selectedCode) {
+                 const courses = [...new Set(subjectData.filter(item => item.class === selectedClass && item.subjectName === selectedSubject && item.subjectCode === selectedCode).map(item => item.course))];
+                 populateDropdown(courseSelect, courses, '-- เลือกรายวิชา --');
+                 courseSelect.disabled = false;
+            }
+        }
+
+        function resetAndDisable(selectElement, defaultText) {
+            selectElement.innerHTML = `<option value="">${defaultText}</option>`;
+            selectElement.disabled = true;
+        }
+
+        function populateDropdown(selectElement, options, defaultText) {
+             selectElement.innerHTML = `<option value="">${defaultText}</option>`;
+             options.forEach(opt => selectElement.add(new Option(opt, opt)));
+        }
+
+        // --- FORM SUBMISSION ---
+        async function handleSubmission(e) {
+            e.preventDefault();
+            Swal.fire({ title: 'กำลังส่งข้อมูล...', text: 'กรุณารอสักครู่ ระบบกำลังอัปโหลดไฟล์และบันทึกข้อมูล', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            try {
+                const file1 = document.getElementById('file1').files[0];
+                const file2 = document.getElementById('file2').files[0];
+
+                const [file1Base64, file2Base64] = await Promise.all([
+                    fileToBase64(file1),
+                    fileToBase64(file2)
+                ]);
+
+                const planData = {
+                    academicYear: document.getElementById('academicYear').value,
+                    submitterFullName: loggedInUser.fullName,
+                    submitterUsername: loggedInUser.username,
+                    learningArea: document.getElementById('learningArea').value,
+                    class: document.getElementById('class').value,
+                    subjectName: document.getElementById('subjectName').value,
+                    subjectCode: document.getElementById('subjectCode').value,
+                    course: document.getElementById('course').value,
+                    additionalLink: document.getElementById('additionalLink').value,
+                    file1_base64: file1Base64,
+                    file1_name: file1.name,
+                    file2_base64: file2Base64,
+                    file2_name: file2.name,
+                };
+                
+                google.script.run
+                    .withSuccessHandler(response => {
+                        if(response.success) {
+                            Swal.fire({ icon: 'success', title: 'ส่งสำเร็จ!', text: response.message })
+                                .then(() => window.location.href = WEB_APP_URL + '?page=Dashboard');
+                        } else {
+                            onFailure({ message: response.message });
+                        }
+                    })
+                    .withFailureHandler(onFailure)
+                    .submitLessonPlan(planData);
+
+            } catch(error) {
+                onFailure(error);
+            }
+        }
+        
+        // --- HELPER FUNCTIONS ---
+        function updateFileName(input, nameId) {
+            document.getElementById(nameId).textContent = input.files.length > 0 ? input.files[0].name : 'ยังไม่ได้เลือกไฟล์';
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+        
+        function onFailure(error) {
+            Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: error.message });
+        }
+    </script>
+
+</body>
+</html>
