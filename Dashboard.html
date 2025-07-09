@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แดชบอร์ด - ระบบส่งแผนการสอนออนไลน์</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root {
+            --header-gradient: linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%);
+            --primary-color: #3a47d5;
+            --secondary-color: #f4f7fc;
+            --text-color: #333;
+            --light-text-color: #777;
+            --white-color: #ffffff;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            margin: 0;
+            padding-top: 80px; /* Space for fixed header */
+        }
+
+        /* --- Header & Navigation --- */
+        .main-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: var(--white-color);
+            box-shadow: var(--box-shadow);
+            padding: 0 2rem;
+            height: 80px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+        .logo-container img { width: 50px; }
+        .logo-container span { font-weight: 600; font-size: 1.2rem; margin-left: 1rem; }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: var(--text-color);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        .nav-menu a:hover, .nav-menu a.active { color: var(--primary-color); }
+        
+        .admin-menu { display: none; } /* Hidden by default */
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .user-profile #welcome-message { font-size: 0.9rem; }
+        .btn-logout {
+            background-color: var(--danger-color);
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Prompt', sans-serif;
+        }
+        
+        /* --- Main Content --- */
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .dashboard-header h1 { font-size: 2rem; }
+        .btn-new-submission {
+            background: var(--header-gradient);
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        /* --- Filter Section --- */
+        .filter-container {
+            background: var(--white-color);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .filter-group { flex: 1; min-width: 180px; }
+        .filter-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+        .filter-group select, .filter-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Prompt', sans-serif;
+        }
+
+        /* --- Data Display --- */
+        #dashboard-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            padding: 3rem;
+            font-size: 1.2rem;
+            color: var(--light-text-color);
+        }
+        
+        .plan-card {
+            background: var(--white-color);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .plan-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1); }
+        
+        .card-header { padding: 1rem 1.5rem; border-bottom: 1px solid #eee; }
+        .card-header h3 { margin: 0; font-size: 1.1rem; }
+        .card-header p { margin: 0.25rem 0 0; font-size: 0.9rem; color: var(--light-text-color); }
+        
+        .card-body { padding: 1.5rem; flex-grow: 1; }
+        .card-detail { display: flex; justify-content: space-between; margin-bottom: 0.75rem; font-size: 0.9rem; }
+        .card-detail span:first-child { font-weight: 500; }
+        .card-detail a { color: var(--primary-color); text-decoration: none; }
+        
+        .card-footer {
+            background-color: #fdfdfd;
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            color: white;
+        }
+        .status-badge.pending { background-color: var(--warning-color); }
+        .status-badge.approved { background-color: var(--success-color); }
+        .status-badge.revision { background-color: var(--danger-color); }
+
+        .action-buttons button {
+            background: none;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Prompt', sans-serif;
+        }
+        .action-buttons button:hover { background: var(--primary-color); color: white; }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 2rem;
+            color: var(--light-text-color);
+        }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="logo-container">
+            <img src="https://img5.pic.in.th/file/secure-sv1/-sena-bg.png" alt="Logo">
+            <span>ระบบแผนการสอน</span>
+        </div>
+        <nav class="nav-menu">
+            <a href="#" id="nav-submission" class="nav-link">📝 ส่งงาน</a>
+            <a href="#" id="nav-dashboard" class="nav-link">📊 แดชบอร์ด</a>
+            <a href="#" id="nav-profile" class="nav-link">👤 โปรไฟล์</a>
+            <a href="#" id="nav-admin-users" class="nav-link admin-menu">⚙️ จัดการผู้ใช้</a>
+            <a href="#" id="nav-admin-log" class="nav-link admin-menu">🔍 ตรวจสอบ Log</a>
+        </nav>
+        <div class="user-profile">
+            <span id="welcome-message"></span>
+            <button id="logoutButton" class="btn-logout">ออกจากระบบ</button>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>แดชบอร์ด</h1>
+            <a href="#" id="newSubmissionButton" class="btn-new-submission">➕ ส่งแผนการสอนใหม่</a>
+        </div>
+
+        <div class="filter-container">
+            </div>
+
+        <div id="dashboard-content">
+            <div class="loading-spinner">กำลังโหลดข้อมูล...</div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>พัฒนาโดย Mr.Boonchai Boonsopon © 2025 ระบบแผนการสอนออนไลน์</p>
+    </footer>
+
+
+    <script>
+        // --- GLOBAL VARIABLES ---
+        const WEB_APP_URL = '<?= ScriptApp.getService().getUrl() ?>';
+        let loggedInUser = null;
+        let allPlansData = []; // To store all fetched data for client-side filtering
+
+        // --- ON PAGE LOAD ---
+        window.addEventListener('DOMContentLoaded', () => {
+            authenticateUser();
+            setupUI();
+            fetchDashboardData();
+        });
+
+        /**
+         * Checks if user is logged in via sessionStorage. Redirects if not.
+         */
+        function authenticateUser() {
+            const userData = sessionStorage.getItem('loggedInUser');
+            if (!userData) {
+                window.location.href = WEB_APP_URL + '?page=Index';
+                return;
+            }
+            loggedInUser = JSON.parse(userData);
+        }
+
+        /**
+         * Sets up the static parts of the UI based on user role.
+         */
+function setupUI() {
+            // Welcome message
+            document.getElementById('welcome-message').textContent = `ยินดีต้อนรับ, คุณ ${loggedInUser.fullName}`;
+
+            // Show/Hide Admin Menus
+            const isAdmin = ['Admin', 'ฝ่ายวิชาการ', 'รองผู้อำนวยการสถานศึกษา', 'ผู้อำนวยการสถานศึกษา'].includes(loggedInUser.position);
+            if (isAdmin) {
+                document.querySelectorAll('.admin-menu').forEach(el => el.style.display = 'inline-block');
+            }
+
+            // Setup Logout Button
+            document.getElementById('logoutButton').addEventListener('click', logout);
+            
+            // เรียกใช้ฟังก์ชันนำทางที่เราสร้างขึ้น
+            // โดยส่งชื่อ 'Dashboard' ไปเพื่อบอกว่านี่คือหน้าที่กำลังเปิดอยู่
+            setupNavigation('Dashboard');
+        }
+
+        /**
+         * Fetches all relevant plan data from the server.
+         */
+        function fetchDashboardData() {
+            const contentDiv = document.getElementById('dashboard-content');
+            contentDiv.innerHTML = '<div class="loading-spinner">กำลังโหลดข้อมูล...</div>';
+
+            google.script.run
+                .withSuccessHandler(response => {
+                    allPlansData = response;
+                    renderDashboard(allPlansData);
+                })
+                .withFailureHandler(onFailure)
+                .getDashboardData(loggedInUser.username, loggedInUser.position);
+        }
+
+        /**
+         * Renders the plan cards on the dashboard.
+         * @param {Array<object>} plansData The array of plan objects to render.
+         */
+        function renderDashboard(plansData) {
+            const contentDiv = document.getElementById('dashboard-content');
+            contentDiv.innerHTML = ''; // Clear previous content
+
+            if (plansData.length === 0) {
+                contentDiv.innerHTML = '<div class="loading-spinner">ไม่พบข้อมูล...</div>';
+                return;
+            }
+            
+            plansData.forEach(plan => {
+                const card = createPlanCard(plan);
+                contentDiv.appendChild(card);
+            });
+        }
+        
+        /**
+         * Creates a single plan card element.
+         * @param {object} plan The plan data object.
+         * @returns {HTMLElement} The card element.
+         */
+        function createPlanCard(plan) {
+            const card = document.createElement('div');
+            card.className = 'plan-card';
+            
+            const submissionDate = new Date(plan['วันเวลาที่ส่ง']).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+            
+            // Determine overall status
+            let overallStatus, statusText, statusClass;
+            const finalStatus = plan['สถานะการอนุมัติ (ผู้อำนวยการฯ)'];
+            const deputyStatus = plan['สถานะการอนุมัติ (รองผู้อำนวยการฯ)'];
+            const academicStatus = plan['สถานะการอนุมัติ (ฝ่ายวิชาการ)'];
+
+            if (academicStatus === 'แจ้งแก้ไข' || deputyStatus === 'แจ้งแก้ไข' || finalStatus === 'แจ้งแก้ไข') {
+                overallStatus = 'revision';
+                statusText = 'ต้องการแก้ไข ❗';
+                statusClass = 'revision';
+            } else if (finalStatus === 'อนุมัติแล้ว') {
+                overallStatus = 'approved';
+                statusText = 'อนุมัติแล้ว ✅';
+                statusClass = 'approved';
+            } else {
+                overallStatus = 'pending';
+                statusText = 'รอตรวจสอบ ⭐';
+                statusClass = 'pending';
+            }
+            
+            card.innerHTML = `
+                <div class="card-header">
+                    <h3>${plan['ชื่อวิชา']} (${plan['รหัสวิชา']})</h3>
+                    <p>ผู้ส่ง: ${plan['ชื่อ-นามสกุล']}</p>
+                </div>
+                <div class="card-body">
+                    <div class="card-detail"><span>วันที่ส่ง:</span> <span>${submissionDate}</span></div>
+                    <div class="card-detail"><span>ปีการศึกษา:</span> <span>${plan['ปีการศึกษา']}</span></div>
+                    <div class="card-detail"><span>ชั้นเรียน:</span> <span>${plan['ชั้นเรียน']}</span></div>
+                    <div class="card-detail"><span>โครงสร้างรายวิชา:</span> <a href="${plan['ไฟล์แนบ 1 (โครงสร้างรายวิชา)']}" target="_blank">เปิดไฟล์ PDF</a></div>
+                    <div class="card-detail"><span>แผนการจัดการเรียนรู้:</span> <a href="${plan['ไฟล์แนบ 2 (แผนการจัดการเรียนรู้)']}" target="_blank">เปิดไฟล์ PDF</a></div>
+                </div>
+                <div class="card-footer">
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                    <div class="action-buttons" id="actions-${plan.rowId}"></div>
+                </div>
+            `;
+            
+            // --- Add Action Buttons based on Role and Status ---
+            const actionContainer = card.querySelector(`#actions-${plan.rowId}`);
+            
+            // Teachers can edit if revision is requested
+            if (loggedInUser.fullName === plan['ชื่อ-นามสกุล'] && overallStatus === 'revision') {
+                const editButton = document.createElement('button');
+                editButton.textContent = 'แก้ไขและส่งใหม่';
+                editButton.onclick = () => showResubmitModal(plan);
+                actionContainer.appendChild(editButton);
+            }
+
+            // Approvers can approve/reject if it's their turn
+            const approverRoles = {
+                'ฝ่ายวิชาการ': academicStatus,
+                'รองผู้อำนวยการสถานศึกษา': deputyStatus,
+                'ผู้อำนวยการสถานศึกษา': finalStatus
+            };
+            const isPreviousApproved = (role) => {
+                if (role === 'ฝ่ายวิชาการ') return true; // First in line
+                if (role === 'รองผู้อำนวยการสถานศึกษา') return academicStatus === 'อนุมัติแล้ว';
+                if (role === 'ผู้อำนวยการสถานศึกษา') return deputyStatus === 'อนุมัติแล้ว';
+                return false;
+            }
+
+            if (approverRoles[loggedInUser.position] === 'รอตรวจสอบ' && isPreviousApproved(loggedInUser.position)) {
+                 const approveButton = document.createElement('button');
+                 approveButton.textContent = 'ตรวจสอบ';
+                 approveButton.onclick = () => showApprovalModal(plan);
+                 actionContainer.appendChild(approveButton);
+            }
+            
+            return card;
+        }
+
+        // --- ACTION HANDLERS & MODALS ---
+
+        function showApprovalModal(plan) {
+            // This function would show a modal for approval
+            Swal.fire({
+                title: `ตรวจสอบแผน: ${plan['ชื่อวิชา']}`,
+                html: `
+                    <p><b>ผู้ส่ง:</b> ${plan['ชื่อ-นามสกุล']}</p>
+                    <p>โปรดตรวจสอบไฟล์และให้ความคิดเห็น</p>
+                    <textarea id="approvalComment" class="swal2-textarea" placeholder="ความคิดเห็น (ถ้ามี)"></textarea>
+                `,
+                showDenyButton: true,
+                showCancelButton: true,
+                confirmButtonText: '✅ อนุมัติ',
+                denyButtonText: '❗ แจ้งแก้ไข',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed || result.isDenied) {
+                    const comment = document.getElementById('approvalComment').value;
+                    const decision = result.isConfirmed ? 'อนุมัติแล้ว' : 'แจ้งแก้ไข';
+
+                    if (result.isDenied && !comment) {
+                         Swal.fire('ข้อผิดพลาด', 'กรุณากรอกความคิดเห็นเพื่อแจ้งแก้ไข', 'error');
+                         return;
+                    }
+                    
+                    Swal.fire({ title: 'กำลังบันทึก...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                    google.script.run
+                        .withSuccessHandler(() => {
+                            Swal.fire('สำเร็จ!', 'บันทึกการตรวจสอบเรียบร้อยแล้ว', 'success');
+                            fetchDashboardData(); // Refresh data
+                        })
+                        .withFailureHandler(onFailure)
+                        .processApproval(plan.rowId, loggedInUser.position, decision, comment, loggedInUser.username);
+                }
+            });
+        }
+        
+        function showResubmitModal(plan) {
+            // This function would show a modal for resubmitting
+            // A more complex implementation might be needed, but this is a start
+            Swal.fire('แจ้งเตือน', 'ฟังก์ชันแก้ไขและส่งใหม่จะต้องนำท่านไปยังหน้าฟอร์มเพื่ออัปโหลดไฟล์ใหม่', 'info');
+            // For now, let's just show an alert. A full implementation would redirect to a pre-filled form.
+        }
+
+        function logout() {
+            sessionStorage.removeItem('loggedInUser');
+            window.location.href = WEB_APP_URL + '?page=Index';
+        }
+
+        function onFailure(error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'เกิดข้อผิดพลาดร้ายแรง',
+                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้: ' + error.message
+            });
+        }
+
+/**
+ * Sets up navigation links and highlights the active page.
+ * @param {string} activePage - The name of the current page ('Dashboard', 'SubmissionForm', etc.)
+ */
+function setupNavigation(activePage) {
+    const navLinks = {
+        'SubmissionForm': document.getElementById('nav-submission'),
+        'Dashboard': document.getElementById('nav-dashboard'),
+        'Profile': document.getElementById('nav-profile'),
+        'Admin': document.getElementById('nav-admin-users'),
+        'AdminLog': document.getElementById('nav-admin-log')
+    };
+
+    // Add click event listeners to all links
+    for (const [page, element] of Object.entries(navLinks)) {
+        if (element) {
+            // Highlight the active page link
+            if (page === activePage) {
+                element.classList.add('active');
+            } else {
+                element.classList.remove('active');
+            }
+
+            // Set up the click action to navigate
+            element.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = `${WEB_APP_URL}?page=${page}`;
+            });
+        }
+    }
+}
+
+    </script>
+</body>
+</html>
