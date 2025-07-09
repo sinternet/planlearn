@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ลงทะเบียน - ระบบส่งแผนการสอนออนไลน์</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        :root {
+            --header-gradient: linear-gradient(90deg, #00d2ff 0%, #3a47d5 100%);
+            --primary-color: #3a47d5;
+            --secondary-color: #f0f2f5;
+            --text-color: #333;
+            --light-text-color: #777;
+            --white-color: #ffffff;
+            --border-radius: 12px;
+            --box-shadow: 0 4px_20px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px; /* Wider for registration form */
+            text-align: center;
+        }
+        
+        .register-header {
+             margin-bottom: 2rem;
+        }
+
+        .register-header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .register-header p {
+            color: var(--light-text-color);
+        }
+
+        .register-card {
+            background-color: var(--white-color);
+            padding: 2.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            text-align: left;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        /* Responsive grid for larger screens */
+        @media (min-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .grid-col-span-2 {
+                grid-column: span 2;
+            }
+        }
+
+        .input-group {
+            margin-bottom: 0.5rem;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'Prompt', sans-serif;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .file-input-group {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s, background-color 0.3s;
+        }
+        .file-input-group:hover {
+            border-color: var(--primary-color);
+            background-color: #f9f9ff;
+        }
+        .file-input-group input[type="file"] {
+            display: none;
+        }
+        .file-input-group .file-label {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        .file-input-group .file-name {
+            display: block;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--light-text-color);
+        }
+        .img-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 2px solid #eee;
+            margin: 0.5rem auto 0;
+            display: none; /* Hidden by default */
+            object-fit: cover;
+        }
+
+
+        .btn-register {
+            width: 100%;
+            padding: 14px;
+            margin-top: 1.5rem;
+            border: none;
+            border-radius: 8px;
+            background: var(--header-gradient);
+            color: var(--white-color);
+            font-family: 'Prompt', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .btn-register:hover {
+            opacity: 0.9;
+        }
+
+        .login-link {
+            margin-top: 2rem;
+            text-align: center;
+        }
+        
+        .login-link a {
+            color: var(--light-text-color);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+        .login-link a:hover {
+            color: var(--primary-color);
+            text-decoration: underline;
+        }
+
+        footer {
+            margin-top: 3rem;
+            font-size: 0.8rem;
+            color: var(--light-text-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header class="register-header">
+            <h1>📝 สร้างบัญชีผู้ใช้ใหม่</h1>
+            <p>กรอกข้อมูลด้านล่างเพื่อเริ่มต้นใช้งานระบบ</p>
+        </header>
+
+        <main>
+            <div class="register-card">
+                <form id="registrationForm">
+                    <div class="form-grid">
+                        <div class="input-group">
+                            <label for="prefix">คำนำหน้า</label>
+                            <select id="prefix" required>
+                                <option value="" disabled selected>-- เลือกคำนำหน้า --</option>
+                                <option value="นาย">นาย</option>
+                                <option value="นาง">นาง</option>
+                                <option value="นางสาว">นางสาว</option>
+                            </select>
+                        </div>                        
+                        <div class="input-group grid-col-span-2">
+                            <label for="fullName">ชื่อ-นามสกุล</label>
+                            <input type="text" id="fullName" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="position">ตำแหน่ง</label>
+                            <select id="position" required>
+                                <option value="" disabled selected>-- เลือกตำแหน่ง --</option>
+                                <option value="ครู">ครู</option>
+                                <option value="ผู้ช่วยครูผู้ช่วย">ผู้ช่วยครูผู้ช่วย</option>
+                                <option value="ฝ่ายวิชาการ">ฝ่ายวิชาการ</option>
+                                <option value="รองผู้อำนวยการสถานศึกษา">รองผู้อำนวยการสถานศึกษา</option>
+                                <option value="ผู้อำนวยการสถานศึกษา">ผู้อำนวยการสถานศึกษา</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group grid-col-span-2">
+                            <label for="academicStanding">วิทยฐานะ</label>
+                            <select id="academicStanding" required>
+                                <option value="" disabled selected>-- เลือกวิทยฐานะ --</option>
+                                <option value="ไม่มีวิทยฐานะ">ไม่มีวิทยฐานะ</option>
+                                <option value="ครูผู้ช่วย">ครูผู้ช่วย</option>
+                                <option value="คศ.1">คศ.1</option>
+                                <option value="ครูชำนาญการ">ครูชำนาญการ</option>
+                                <option value="ครูชำนาญการพิเศษ">ครูชำนาญการพิเศษ</option>
+                                <option value="ครูเชี่ยวชาญ">ครูเชี่ยวชาญ</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group">
+                           <label>รูปประจำตัว</label>
+                           <label for="profilePic" class="file-input-group">
+                               <span class="file-label">คลิกเพื่ออัปโหลด</span>
+                               <span class="file-name" id="profilePicName">ยังไม่ได้เลือกไฟล์</span>
+                               <img id="profilePicPreview" class="img-preview" alt="Profile Preview">
+                           </label>
+                           <input type="file" id="profilePic" accept="image/*" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label>รูปลายเซ็นต์</label>
+                           <label for="signature" class="file-input-group">
+                               <span class="file-label">คลิกเพื่ออัปโหลด</span>
+                               <span class="file-name" id="signatureName">ยังไม่ได้เลือกไฟล์</span>
+                               <img id="signaturePreview" class="img-preview" alt="Signature Preview">
+                           </label>
+                            <input type="file" id="signature" accept="image/*" required>
+                        </div>
+                        
+                        <hr class="grid-col-span-2" style="margin: 1rem 0; border: 1px solid #f0f0f0;">
+
+                        <div class="input-group">
+                            <label for="username">ชื่อผู้ใช้งาน (Username)</label>
+                            <input type="text" id="username" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="email">อีเมล</label>
+                            <input type="email" id="email" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="password">รหัสผ่าน</label>
+                            <input type="password" id="password" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="confirmPassword">ยืนยันรหัสผ่าน</label>
+                            <input type="password" id="confirmPassword" required>
+                        </div>
+
+                        <div class="grid-col-span-2">
+                           <button type="submit" class="btn-register">ลงทะเบียน</button>
+                        </div>
+
+                    </div>
+                </form>
+                <div class="login-link">
+                    <a href="#" id="backToLoginLink">มีบัญชีอยู่แล้ว? กลับไปหน้าเข้าสู่ระบบ</a>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>พัฒนาโดย Mr.Boonchai Boonsopon © 2025 ระบบแผนการสอนออนไลน์</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- Get Web App URL for redirection ---
+        const WEB_APP_URL = '<?= ScriptApp.getService().getUrl() ?>';
+
+        // --- Event Listeners ---
+        document.getElementById('registrationForm').addEventListener('submit', handleRegistration);
+        document.getElementById('backToLoginLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            window.location.href = WEB_APP_URL + '?page=Index';
+        });
+        
+        // --- Image Preview Listeners ---
+        document.getElementById('profilePic').addEventListener('change', (e) => {
+            previewImage(e.target, 'profilePicPreview', 'profilePicName');
+        });
+        document.getElementById('signature').addEventListener('change', (e) => {
+            previewImage(e.target, 'signaturePreview', 'signatureName');
+        });
+
+
+        /**
+         * Reads a file and converts it to a Base64 string.
+         * @param {File} file The file to convert.
+         * @returns {Promise<string>} A promise that resolves with the Base64 string.
+         */
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+        
+        /**
+         * Displays a preview of the selected image.
+         * @param {HTMLInputElement} input The file input element.
+         * @param {string} previewId The ID of the img element for preview.
+         * @param {string} nameId The ID of the span element for the file name.
+         */
+        function previewImage(input, previewId, nameId) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const previewElement = document.getElementById(previewId);
+                    previewElement.src = e.target.result;
+                    previewElement.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+                document.getElementById(nameId).textContent = file.name;
+            }
+        }
+
+        /**
+         * Handles the registration form submission.
+         * @param {Event} e The form submission event.
+         */
+        async function handleRegistration(e) {
+            e.preventDefault();
+
+            // --- Form Validation ---
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                Swal.fire('ข้อผิดพลาด', 'รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน', 'error');
+                return;
+            }
+            
+            // --- Show Loading Alert ---
+            Swal.fire({
+                title: 'กำลังลงทะเบียน...',
+                text: 'กรุณารอสักครู่ ระบบกำลังบันทึกข้อมูล',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                // --- Collect User Info ---
+                const userInfo = {
+                    prefix: document.getElementById('prefix').value,
+                    fullName: document.getElementById('fullName').value,
+                    position: document.getElementById('position').value,
+                    academicStanding: document.getElementById('academicStanding').value,
+                    username: document.getElementById('username').value,
+                    password: password,
+                    email: document.getElementById('email').value,
+                };
+                
+                // --- Convert images to Base64 asynchronously ---
+                const profilePicFile = document.getElementById('profilePic').files[0];
+                const signatureFile = document.getElementById('signature').files[0];
+
+                const [profilePicBase64, signatureBase64] = await Promise.all([
+                    fileToBase64(profilePicFile),
+                    fileToBase64(signatureFile)
+                ]);
+
+                userInfo.profilePic = profilePicBase64;
+                userInfo.signature = signatureBase64;
+
+                // --- Call Server-Side Function ---
+                google.script.run
+                    .withSuccessHandler(onRegistrationSuccess)
+                    .withFailureHandler(onFailure)
+                    .registerUser(userInfo);
+
+            } catch (error) {
+                onFailure(error);
+            }
+        }
+
+        /**
+         * Success callback for the registration function.
+         * @param {object} result The result object from the server.
+         */
+        function onRegistrationSuccess(result) {
+            if (result.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'ลงทะเบียนสำเร็จ!',
+                    text: result.message,
+                }).then(() => {
+                    window.location.href = WEB_APP_URL + '?page=Index';
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ลงทะเบียนไม่สำเร็จ',
+                    text: result.message
+                });
+            }
+        }
+
+        /**
+         * Generic failure callback for google.script.run calls.
+         * @param {Error} error The error object.
+         */
+        function onFailure(error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'เกิดข้อผิดพลาดร้ายแรง',
+                text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้: ' + error.message
+            });
+        }
+    </script>
+
+</body>
+</html>
